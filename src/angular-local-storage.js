@@ -12,6 +12,9 @@ angularLocalStorage.provider('localStorageService', function() {
 
   // You could change web storage type localstorage or sessionStorage
   this.storageType = 'localStorage';
+  
+  // Define if cookie fallback should be used when localStorage fails
+  this.cookieFallback = true;
 
   // Cookie options (usually in case of fallback)
   // expiry = Number of days before cookies expire // 0 = Does not expire
@@ -36,6 +39,12 @@ angularLocalStorage.provider('localStorageService', function() {
    // Setter for the storageType
    this.setStorageType = function(storageType) {
      this.storageType = storageType;
+     return this;
+   };
+   
+    // Setter for the cookieFallback switch
+   this.setCookieFallback = function(cookieFallback) {
+     this.cookieFallback = !!cookieFallback;
      return this;
    };
 
@@ -121,7 +130,7 @@ angularLocalStorage.provider('localStorageService', function() {
       }
 
       // If this browser does not support local storage use cookies
-      if (!browserSupportsLocalStorage || self.storageType === 'cookie') {
+      if ((!browserSupportsLocalStorage && self.cookieFallback) || self.storageType === 'cookie') {
         if (!browserSupportsLocalStorage) {
             $rootScope.$broadcast('LocalStorageModule.notification.warning', 'LOCAL_STORAGE_NOT_SUPPORTED');
         }
@@ -139,7 +148,11 @@ angularLocalStorage.provider('localStorageService', function() {
         }
       } catch (e) {
         $rootScope.$broadcast('LocalStorageModule.notification.error', e.message);
-        return addToCookies(key, value);
+		if(self.cookieFallback) {
+          return addToCookies(key, value);
+		} else {
+		  return false;
+		}
       }
       return true;
     };
